@@ -45,6 +45,7 @@ class AgentSettings(Settings):
     max_tokens: int = DEFAULT_MAX_TOKENS
     model_timeout_seconds: int | None = None
     client_args: dict[str, Any] | None = None
+    request_args: dict[str, Any] | None = None
     verbose: int = Field(default=0, description="Verbosity level for logging. Higher means more verbose.", ge=0, le=2)
 
     @property

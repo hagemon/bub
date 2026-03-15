@@ -34,6 +34,7 @@ OPENROUTER_API_KEY=sk-or-...
 - `BUB_API_FORMAT` 选择发送到上游模型端点的请求载荷格式：`completion`、`responses` 或 `messages`。
 - `BUB_CLIENT_ARGS` 将 JSON 对象透传给底层模型客户端。
 - `BUB_CLIENT_ARGS` 接受的键取决于所选提供商和下游 SDK 行为，因此应将其视为逃生舱口而非稳定的跨提供商接口。
+- `BUB_REQUEST_ARGS` 用于传递单次请求级别的 provider 扩展参数。对于 OpenAI 兼容 provider，不被 SDK 顶层参数接受的键会在需要时通过 `extra_body` 发送（例如 `{"chat_template_kwargs":{"enable_thinking":false}}`）。
 
 ## 运行模式
 

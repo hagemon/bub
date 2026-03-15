@@ -11,7 +11,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Callable, Collection,
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Literal, overload
 
@@ -45,6 +45,26 @@ _CONTEXT_LENGTH_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 MAX_AUTO_HANDOFF_RETRIES = 1
+_OPENAI_COMPATIBLE_PROVIDERS = frozenset({
+    "azureopenai",
+    "databricks",
+    "deepseek",
+    "fireworks",
+    "gateway",
+    "inception",
+    "llama",
+    "llamacpp",
+    "llamafile",
+    "lmstudio",
+    "moonshot",
+    "mzai",
+    "nebius",
+    "openai",
+    "openrouter",
+    "perplexity",
+    "vllm",
+    "zai",
+})
 
 
 class Agent:
@@ -538,6 +558,11 @@ class Agent:
             tools = [tool for tool in REGISTRY.values() if tool.name.casefold() in allowed_tools]
         else:
             tools = list(REGISTRY.values())
+        request_args = _prepare_request_args(
+            model=model or self.settings.model,
+            api_format=self.settings.api_format,
+            request_args=self.settings.request_args,
+        )
         async with asyncio.timeout(self.settings.model_timeout_seconds):
             if stream_output:
                 return await tape.stream_events_async(
@@ -548,6 +573,7 @@ class Agent:
                     max_tokens=self.settings.max_tokens,
                     tools=model_tools(tools),
                     model=model,
+                    **request_args,
                 )
             else:
                 return await tape.run_tools_async(
@@ -558,6 +584,7 @@ class Agent:
                     max_tokens=self.settings.max_tokens,
                     tools=model_tools(tools),
                     model=model,
+                    **request_args,
                 )
 
     def _system_prompt(self, prompt: str, state: State, allowed_skills: set[str] | None = None) -> str:
@@ -655,3 +682,65 @@ def _is_context_length_error(error_msg: str) -> bool:
 def _extract_text_from_parts(parts: list[dict]) -> str:
     """Extract text content from multimodal content parts."""
     return "\n".join(p.get("text", "") for p in parts if p.get("type") == "text")
+
+
+def _provider_name_from_model(model: str) -> str | None:
+    provider_name, _, _ = model.partition(":")
+    if not provider_name or ":" not in model:
+        return None
+    return provider_name.casefold()
+
+
+@cache
+def _openai_completion_arg_names() -> frozenset[str]:
+    from openai.resources.chat.completions.completions import AsyncCompletions
+
+    return frozenset(inspect.signature(AsyncCompletions.create).parameters)
+
+
+@cache
+def _openai_responses_arg_names() -> frozenset[str]:
+    from openai.resources.responses.responses import AsyncResponses
+
+    return frozenset(inspect.signature(AsyncResponses.create).parameters)
+
+
+def _prepare_request_args(
+    *,
+    model: str,
+    api_format: Literal["completion", "responses", "messages"],
+    request_args: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Prepare per-request model arguments for the selected provider transport."""
+    if not request_args:
+        return {}
+
+    prepared = dict(request_args)
+    provider_name = _provider_name_from_model(model)
+    if provider_name not in _OPENAI_COMPATIBLE_PROVIDERS:
+        return prepared
+
+    accepted_arg_names = _openai_responses_arg_names() if api_format == "responses" else _openai_completion_arg_names()
+    passthrough: dict[str, Any] = {}
+    extra_body = prepared.pop("extra_body", None)
+    extra_body_dict = dict(extra_body) if isinstance(extra_body, dict) else None
+    extra_body_updates: dict[str, Any] = {}
+
+    for key, value in prepared.items():
+        if key in accepted_arg_names:
+            passthrough[key] = value
+        else:
+            extra_body_updates[key] = value
+
+    if extra_body_updates:
+        if extra_body_dict is not None:
+            passthrough["extra_body"] = {**extra_body_updates, **extra_body_dict}
+        elif extra_body is None:
+            passthrough["extra_body"] = extra_body_updates
+        else:
+            passthrough["extra_body"] = extra_body
+            passthrough.update(extra_body_updates)
+    elif extra_body is not None:
+        passthrough["extra_body"] = extra_body
+
+    return passthrough

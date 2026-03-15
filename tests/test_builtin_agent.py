@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import republic.auth.openai_codex as openai_codex
-from republic import AsyncStreamEvents, StreamEvent, TapeContext
+from republic import AsyncStreamEvents, StreamEvent, TapeContext, ToolAutoResult
 
 import bub.builtin.agent as agent_module
 from bub.builtin.agent import Agent
@@ -83,7 +83,10 @@ class _FakeTapeService:
 
     def __init__(self, fork_capture: _ForkCapture) -> None:
         self._fork = fork_capture
-        self.run_tools_model: str | None = None
+        self.stream_model: str | None = None
+        self.stream_kwargs: dict[str, Any] | None = None
+        self.run_model: str | None = None
+        self.run_kwargs: dict[str, Any] | None = None
 
     def session_tape(self, session_id: str, workspace: Any) -> MagicMock:
         tape = MagicMock()
@@ -91,14 +94,21 @@ class _FakeTapeService:
         tape.context = TapeContext(state={})
 
         async def fake_stream_events_async(**kwargs: Any) -> AsyncStreamEvents:
-            self.run_tools_model = kwargs.get("model")
+            self.stream_model = kwargs.get("model")
+            self.stream_kwargs = kwargs
 
             async def iterator():
                 yield StreamEvent("final", {"text": "done"})
 
             return AsyncStreamEvents(iterator())
 
+        async def fake_run_tools_async(**kwargs: Any) -> ToolAutoResult:
+            self.run_model = kwargs.get("model")
+            self.run_kwargs = kwargs
+            return ToolAutoResult(kind="text", text="done", tool_calls=[], tool_results=[], error=None)
+
         tape.stream_events_async = fake_stream_events_async
+        tape.run_tools_async = fake_run_tools_async
         return tape
 
     async def ensure_bootstrap_anchor(self, tape_name: str) -> None:
@@ -155,7 +165,7 @@ async def test_agent_run_passes_model_to_llm() -> None:
     )
     [event async for event in result]
 
-    assert fake_tapes.run_tools_model == "openai:gpt-4o"
+    assert fake_tapes.stream_model == "openai:gpt-4o"
 
 
 @pytest.mark.asyncio
@@ -183,4 +193,86 @@ async def test_agent_run_model_defaults_to_none() -> None:
     result = await agent.run_stream(session_id="user/s1", prompt="hello", state={"_runtime_workspace": "/tmp"})  # noqa: S108
     [event async for event in result]
 
-    assert fake_tapes.run_tools_model is None
+    assert fake_tapes.stream_model is None
+
+
+@pytest.mark.asyncio
+async def test_agent_run_stream_passes_request_args_to_llm() -> None:
+    agent = _make_agent()
+    agent.settings = AgentSettings.model_construct(
+        model="vllm:qwen3.6-27B",
+        api_key="k",
+        api_base="b",
+        request_args={
+            "temperature": 0.1,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
+    )
+    fork_capture = _ForkCapture()
+    fake_tapes = _FakeTapeService(fork_capture)
+    agent.tapes = fake_tapes  # type: ignore[assignment]
+
+    result = await agent.run_stream(session_id="user/s1", prompt="hello", state={"_runtime_workspace": "/tmp"})  # noqa: S108
+    [event async for event in result]
+
+    assert fake_tapes.stream_kwargs is not None
+    assert fake_tapes.stream_kwargs["temperature"] == 0.1
+    assert fake_tapes.stream_kwargs["extra_body"] == {
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    assert "chat_template_kwargs" not in fake_tapes.stream_kwargs
+
+
+@pytest.mark.asyncio
+async def test_agent_run_passes_request_args_to_tool_loop() -> None:
+    agent = _make_agent()
+    agent.settings = AgentSettings.model_construct(
+        model="vllm:qwen3.6-27B",
+        api_key="k",
+        api_base="b",
+        request_args={
+            "temperature": 0.1,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
+    )
+    fork_capture = _ForkCapture()
+    fake_tapes = _FakeTapeService(fork_capture)
+    agent.tapes = fake_tapes  # type: ignore[assignment]
+
+    result = await agent.run(session_id="user/s1", prompt="hello", state={"_runtime_workspace": "/tmp"})  # noqa: S108
+
+    assert result == "done"
+    assert fake_tapes.run_kwargs is not None
+    assert fake_tapes.run_kwargs["temperature"] == 0.1
+    assert fake_tapes.run_kwargs["extra_body"] == {
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    assert "chat_template_kwargs" not in fake_tapes.run_kwargs
+
+
+@pytest.mark.asyncio
+async def test_agent_run_merges_explicit_extra_body_with_custom_request_args() -> None:
+    agent = _make_agent()
+    agent.settings = AgentSettings.model_construct(
+        model="vllm:qwen3.6-27B",
+        api_key="k",
+        api_base="b",
+        request_args={
+            "temperature": 0.1,
+            "chat_template_kwargs": {"enable_thinking": False},
+            "extra_body": {"top_k": 5},
+        },
+    )
+    fork_capture = _ForkCapture()
+    fake_tapes = _FakeTapeService(fork_capture)
+    agent.tapes = fake_tapes  # type: ignore[assignment]
+
+    result = await agent.run_stream(session_id="user/s1", prompt="hello", state={"_runtime_workspace": "/tmp"})  # noqa: S108
+    [event async for event in result]
+
+    assert fake_tapes.stream_kwargs is not None
+    assert fake_tapes.stream_kwargs["temperature"] == 0.1
+    assert fake_tapes.stream_kwargs["extra_body"] == {
+        "chat_template_kwargs": {"enable_thinking": False},
+        "top_k": 5,
+    }
