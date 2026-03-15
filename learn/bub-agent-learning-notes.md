@@ -3,6 +3,7 @@
 建议先读：
 
 - `learn/01-overview-philosophy-framework-interaction.md`
+- `learn/02-primitives-and-message-flow.md`
 
 ## 先说结论
 
