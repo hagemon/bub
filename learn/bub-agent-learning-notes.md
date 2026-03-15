@@ -4,6 +4,7 @@
 
 - `learn/01-overview-philosophy-framework-interaction.md`
 - `learn/02-primitives-and-message-flow.md`
+- `learn/03-snippet-first-primitives-and-flow.md`
 
 ## 先说结论
 
