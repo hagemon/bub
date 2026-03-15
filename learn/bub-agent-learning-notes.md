@@ -1,5 +1,9 @@
 # Bub Agent 学习笔记
 
+建议先读：
+
+- `learn/01-overview-philosophy-framework-interaction.md`
+
 ## 先说结论
 
 如果我要教一个人快速理解这个项目，我不会先从“怎么调模型”开始，而会先从 `src/bub/framework.py` 的 `process_inbound()` 开始。
