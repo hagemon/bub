@@ -5,6 +5,7 @@
 - `learn/01-overview-philosophy-framework-interaction.md`
 - `learn/02-primitives-and-message-flow.md`
 - `learn/03-snippet-first-primitives-and-flow.md`
+- `learn/04-hook-runtime-and-process-inbound.md`
 
 ## 先说结论
 
