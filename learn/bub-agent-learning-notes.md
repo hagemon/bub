@@ -6,6 +6,7 @@
 - `learn/02-primitives-and-message-flow.md`
 - `learn/03-snippet-first-primitives-and-flow.md`
 - `learn/04-hook-runtime-and-process-inbound.md`
+- `learn/05-end-to-end-scenarios.md`
 
 ## 先说结论
 
