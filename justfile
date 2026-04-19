@@ -67,4 +67,4 @@ docs:
 # Preview the production documentation build
 docs-preview:
     #!/usr/bin/env bash
-    pnpm --dir website preview --host
+    pnpm --dir website preview --ip 0.0.0.0

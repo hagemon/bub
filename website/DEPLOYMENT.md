@@ -6,29 +6,29 @@ The new `website/` directory is the docs and marketing site for Bub.
 
 Legacy MkDocs source files may still exist in the repository during the
 transition, but production deployment now targets the Astro site on
-Cloudflare Pages.
+Cloudflare Workers.
 
-## Cloudflare Pages
+## Cloudflare Workers
 
-Connect the repository to a Cloudflare Pages project with Git integration.
+Connect the repository to a Cloudflare Worker using Git integration.
 
 Recommended settings:
 
-- Production branch: `main`
-- Root directory: `website`
+- Project name: `bub-website`
 - Build command: `pnpm install --frozen-lockfile && pnpm build`
-- Build output directory: `dist`
+- Deploy command: `pnpm wrangler deploy`
+- Path: `website`
 - Environment variable: `SITE_URL=https://bub.build`
 - Environment variable: `NODE_VERSION=22.16.0`
 
 The repo also includes [wrangler.jsonc](./wrangler.jsonc) so local preview and
-Cloudflare Pages runtime settings stay aligned:
+Cloudflare Workers runtime settings stay aligned:
 
-- `pages_build_output_dir = "./dist"`
+- `main = "./node_modules/@astrojs/cloudflare/dist/entrypoints/server.js"`
 - `compatibility_flags = ["nodejs_compat"]`
 
-Production deployment is driven by GitHub release automation instead of
-push-based auto deploys.
+Production deployment is handled by Cloudflare Workers Git integration instead of
+GitHub Actions.
 
 ## Current Repo State
 
@@ -40,18 +40,20 @@ The local developer entrypoints now target the new site:
 
 The CI docs check also builds `website/` instead of MkDocs.
 
-## GitHub Actions Deployment
+## GitHub Actions and Cloudflare Responsibilities
 
 The deployment split is intentionally simple:
 
 - `main.yml` only verifies that the website builds
-- `on-release-main.yml` deploys production when a GitHub release is published
+- `on-release-main.yml` only handles package release tasks
+- Cloudflare Workers deploys the website from the connected repository
 
-Required repository configuration:
+Required Cloudflare Workers project configuration:
 
-- GitHub Actions secret: `CLOUDFLARE_API_TOKEN`
-- GitHub Actions secret: `CLOUDFLARE_ACCOUNT_ID`
-- GitHub Actions variable: `CLOUDFLARE_PAGES_PROJECT_NAME`
+- Git integration enabled for this repository
+- Build command set to `pnpm install --frozen-lockfile && pnpm build`
+- Deploy command set to `pnpm wrangler deploy`
+- Working directory set to `website`
 
 ## Cutover Later
 
