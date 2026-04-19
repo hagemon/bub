@@ -34,6 +34,7 @@ export default defineConfig({
     starlight({
       title: 'Bub',
       description: 'A common shape for agents that live alongside people.',
+      expressiveCode: false,
       logo: {
         light: './src/assets/bub-logo.png',
         dark: './src/assets/bub-logo-dark.png',
