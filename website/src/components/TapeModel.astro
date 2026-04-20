@@ -210,13 +210,24 @@ const t = useTranslations(getLangFromUrl(Astro.url));
   }
 
   /* ── Animations ── */
-  .tape-live-dot   { animation: live-pulse   2s ease-in-out infinite; }
-  .tape-cursor-line { animation: cursor-blink 1s ease-in-out infinite; }
+  .tape-live-dot,
+  .tape-cursor-line {
+    animation-play-state: paused;
+  }
+  .tape-live-dot {
+    box-shadow: 0 0 6px var(--site-accent-live-shadow);
+  }
+  [data-tape-running] .tape-live-dot {
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+  [data-tape-running] .tape-cursor-line {
+    animation: cursor-blink 1s ease-in-out infinite;
+  }
   .tape-live-label { color: var(--site-accent-live); opacity: 0.8; }
 
   @keyframes live-pulse {
-    0%, 100% { opacity: 1;   box-shadow: 0 0 6px var(--site-accent-live-shadow);  }
-    50%       { opacity: 0.4; box-shadow: 0 0 2px var(--site-accent-live-shadow-dim); }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
   }
   @keyframes cursor-blink {
     0%, 100% { opacity: 1; }
@@ -276,9 +287,29 @@ const t = useTranslations(getLangFromUrl(Astro.url));
 
     let active = false;
     let timers: number[] = [];
+    let controls: Array<{ stop: () => void }> = [];
+
+    function setRunning(running: boolean) {
+      viz.toggleAttribute('data-tape-running', running);
+    }
 
     function sched(fn: () => void, ms: number) {
       timers.push(window.setTimeout(() => { if (active) fn(); }, ms));
+    }
+
+    function runAnimation(
+      target: Parameters<typeof animate>[0],
+      keyframes: Parameters<typeof animate>[1],
+      options: Parameters<typeof animate>[2],
+    ) {
+      const control = animate(target, keyframes, options);
+      controls.push(control);
+      return control;
+    }
+
+    function stopAnimations() {
+      controls.forEach((control) => control.stop());
+      controls = [];
     }
 
     function clearTimers() {
@@ -287,6 +318,8 @@ const t = useTranslations(getLangFromUrl(Astro.url));
     }
 
     function reset() {
+      stopAnimations();
+      setRunning(false);
       if (header) header.style.opacity = '0';
       rows.forEach(r => {
         r.style.opacity = '0';
@@ -308,15 +341,16 @@ const t = useTranslations(getLangFromUrl(Astro.url));
       if (!active) return;
       clearTimers();
       reset();
+      setRunning(true);
 
       // ─ Phase 1: header
       sched(() => {
-        if (header) animate(header, { opacity: [0, 1] }, { duration: 0.3, ease: 'ease-out' });
+        if (header) runAnimation(header, { opacity: [0, 1] }, { duration: 0.3, ease: 'ease-out' });
       }, 60);
 
       // ─ Phase 2: staggered rows
       sched(() => {
-        animate(
+        runAnimation(
           rows,
           { opacity: [0, 1], y: [10, 0] },
           { delay: stagger(GAP, { start: BASE }), duration: 0.4, ease: [0.22, 1, 0.36, 1] }
@@ -331,7 +365,7 @@ const t = useTranslations(getLangFromUrl(Astro.url));
           sched(() => {
             const badge = row.querySelector('.tape-anchor-badge') as HTMLElement | null;
             if (badge) {
-              animate(badge, { scale: [0.85, 1.05, 1] }, { duration: 0.55, ease: [0.22, 1, 0.36, 1] });
+              runAnimation(badge, { scale: [0.85, 1.05, 1] }, { duration: 0.55, ease: [0.22, 1, 0.36, 1] });
               row.classList.add('tape-anchor-glow');
               sched(() => row.classList.remove('tape-anchor-glow'), 1500);
             }
@@ -353,24 +387,24 @@ const t = useTranslations(getLangFromUrl(Astro.url));
       sched(() => {
         if (!scan) return;
         const h = scan.parentElement?.scrollHeight ?? 300;
-        animate(scan, { opacity: [0, 0.7, 0.7, 0], y: [0, 0, h, h] }, { duration: 1.3, ease: [0.4, 0, 0.2, 1] });
+        runAnimation(scan, { opacity: [0, 0.7, 0.7, 0], y: [0, 0, h, h] }, { duration: 1.3, ease: [0.4, 0, 0.2, 1] });
       }, (ENTRANCE_END + 0.15) * 1000);
 
       // ─ Phase 5: cursor
       sched(() => {
-        if (cursor) animate(cursor, { opacity: [0, 1] }, { duration: 0.4, ease: 'ease-out' });
+        if (cursor) runAnimation(cursor, { opacity: [0, 1] }, { duration: 0.4, ease: 'ease-out' });
       }, (ENTRANCE_END + 0.5) * 1000);
 
       // ─ Phase 6: view assembly
       sched(() => {
-        if (viewEl) animate(viewEl, { opacity: [0, 1], y: [6, 0] }, { duration: 0.5, ease: [0.22, 1, 0.36, 1] });
+        if (viewEl) runAnimation(viewEl, { opacity: [0, 1], y: [6, 0] }, { duration: 0.5, ease: [0.22, 1, 0.36, 1] });
       }, (ENTRANCE_END + 1.2) * 1000);
 
       // ─ Phase 7: hold → fade out → loop
       const fadeAt = (ENTRANCE_END + 1.8 + HOLD) * 1000;
       sched(() => {
         const all = [header, ...rows, viewEl, cursor].filter(Boolean) as HTMLElement[];
-        animate(all, { opacity: 0 }, { duration: FADE, ease: 'ease-in' });
+        runAnimation(all, { opacity: 0 }, { duration: FADE, ease: 'ease-in' });
         sched(() => cycle(), (FADE + PAUSE) * 1000);
       }, fadeAt);
     }
@@ -383,7 +417,7 @@ const t = useTranslations(getLangFromUrl(Astro.url));
         clearTimers();
         reset();
       };
-    }, { margin: '-10% 0px' });
+    }, { margin: '-20% 0px -20% 0px' });
 
     tapeAnimationWindow.__bubTapeAnimationCleanup = () => {
       stopInView();
