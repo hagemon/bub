@@ -1,9 +1,10 @@
 ---
 title: Skills
-description: Skills as SKILL.md documents — minimal contract, frontmatter fields, discovery and override, runtime access, authoring guidance, and script convention.
+description: Skill contract, frontmatter fields, discovery and override, runtime access, authoring guidance, and script convention.
 ---
 
-Bub treats skills as discoverable `SKILL.md` documents with validated frontmatter.
+Bub's skills system follows [Agent Skills](https://agentskills.io/): a skill is a discoverable directory centered on `SKILL.md`, with optional `scripts/`, `references/`, `assets/`, and other supporting files.
+The notes below focus on how Bub loads those skills and the authoring patterns we recommend.
 
 ## Minimal Contract
 
@@ -14,7 +15,13 @@ my-skill/
 `-- SKILL.md
 ```
 
-Validation rules from `src/bub/skills.py`:
+Common optional directories from the Agent Skills format:
+
+- `scripts/` for executable helpers
+- `references/` for load-on-demand documentation
+- `assets/` for templates and static resources
+
+Bub's current loader expects:
 
 - `SKILL.md` must start with YAML frontmatter (`--- ... ---`)
 - frontmatter must include non-empty `name` and `description`
@@ -26,12 +33,12 @@ Validation rules from `src/bub/skills.py`:
 
 ## Frontmatter Fields
 
-Currently enforced fields:
+Fields Bub currently reads:
 
 - required: `name`, `description`
 - optional with type check: `metadata`
 
-Other extra keys are allowed but not validated by core.
+Other extra keys are allowed.
 
 ## Discovery And Override
 
@@ -42,6 +49,8 @@ Skills are discovered from three roots in this precedence order:
 3. builtin: `src/skills`
 
 If names collide, earlier roots in this list win.
+
+This discovery model is Bub's runtime behavior on top of the standard Agent Skills format.
 
 Legacy path note: `.agent/skills` is still scanned for compatibility, but Bub emits a deprecation warning and prefers `.agents/skills`.
 
@@ -60,6 +69,7 @@ If a skill is not found, `,skill name=<name>` returns `(no such skill)`.
 - keep `SKILL.md` concise and action-oriented
 - keep metadata small and deterministic
 - use lowercase kebab-case names for compatibility
+- move detailed material into `references/` or scripts instead of overloading `SKILL.md`
 
 ## Optional Script Convention
 

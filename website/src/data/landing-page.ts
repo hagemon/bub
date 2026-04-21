@@ -88,10 +88,10 @@ const landingPageData: Record<LandingLocale, LandingPageData> = {
             "The same process_inbound() pipeline drives CLI, Telegram, and any channel you add. Hooks never know which surface they're on.",
         },
         {
-          icon: 'fileSearch',
-          title: 'Skills as Docs',
+          icon: 'package',
+          title: 'Batteries Included',
           description:
-            'Skills are SKILL.md files with validated frontmatter — not code modules with magic registration. Discoverable, overridable, auditable.',
+            'CLI, chat, gateway, comma commands, and the default agent runtime all ship as ordinary plugins. Useful on day one, replaceable when you need control.',
         },
         {
           icon: 'users',
@@ -168,9 +168,9 @@ const landingPageData: Record<LandingLocale, LandingPageData> = {
           description: '同一个 Pipeline 上驱动 CLI、Telegram 甚至你添加的任何 channel。Hooks 从不感知运行在哪个地方，可以是任意来源。',
         },
         {
-          icon: 'fileSearch',
-          title: 'Skills as Docs',
-          description: 'Skills 是带验证 frontmatter 的 SKILL.md 文件——而黑箱代码模块。确保你的 SKILL 都是可被发现、覆盖且审计。',
+          icon: 'package',
+          title: '开箱即用',
+          description: 'CLI、chat、gateway、逗号命令和默认 agent runtime 都以内置插件形式交付。第一天就能直接用，需要控制权时也能随时替换。',
         },
         {
           icon: 'users',

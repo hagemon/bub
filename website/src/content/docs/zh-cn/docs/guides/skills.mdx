@@ -1,9 +1,10 @@
 ---
 title: 技能
-description: 技能即 SKILL.md 文档——最小契约、前置字段、发现与覆盖、运行时访问、编写指南和脚本约定。
+description: Skill 的最小契约、frontmatter 字段、发现与覆盖、运行时访问、编写指南和脚本约定。
 ---
 
-Bub 将技能视为可发现的 `SKILL.md` 文档，带有经过验证的 frontmatter。
+Bub 的 skills 系统遵循 [Agent Skills](https://agentskills.io/)：一个 skill 是以 `SKILL.md` 为中心的可发现目录，并可包含 `scripts/`、`references/`、`assets/` 等辅助文件。
+下面的内容主要说明 Bub 如何加载这些 skill，以及我们推荐的编写方式。
 
 ## 最小契约
 
@@ -14,7 +15,13 @@ my-skill/
 `-- SKILL.md
 ```
 
-`src/bub/skills.py` 中的验证规则：
+Agent Skills 中常见的可选目录还有：
+
+- `scripts/`：可执行辅助脚本
+- `references/`：按需加载的参考文档
+- `assets/`：模板和静态资源
+
+Bub 当前的加载器会读取并要求：
 
 - `SKILL.md` 必须以 YAML frontmatter 开头（`--- ... ---`）
 - frontmatter 必须包含非空的 `name` 和 `description`
@@ -26,12 +33,12 @@ my-skill/
 
 ## Frontmatter 字段
 
-当前强制校验的字段：
+Bub 当前会读取的字段：
 
 - 必需：`name`、`description`
 - 可选（带类型检查）：`metadata`
 
-允许其他额外字段，但核心不对其进行验证。
+允许其他额外字段。
 
 ## 发现与覆盖
 
@@ -42,6 +49,8 @@ my-skill/
 3. 内置：`src/skills`
 
 如果名称冲突，列表中靠前的根目录胜出。
+
+这是 Bub 在标准 Agent Skills 格式之上的运行时发现行为。
 
 遗留路径说明：`.agent/skills` 仍会被扫描以保持兼容，但 Bub 会发出弃用警告并优先使用 `.agents/skills`。
 
@@ -60,6 +69,7 @@ uv run bub run ",skill name=my-skill"
 - 保持 `SKILL.md` 简洁且面向操作
 - 保持 metadata 精简且确定性
 - 使用小写 kebab-case 命名以保证兼容性
+- 详细资料尽量放入 `references/` 或脚本，而不是把 `SKILL.md` 写得过长
 
 ## 可选脚本约定
 

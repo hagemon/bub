@@ -43,7 +43,7 @@ uv run bub gateway                      # channel listener mode
 - **Tape context.** Context is rebuilt from append-only records, not carried around as mutable session state. Easier to inspect, replay, and hand off.
 - **One runtime across surfaces.** The same inbound pipeline runs across CLI, Telegram, and custom channels. Adapters change the surface, not the runtime model.
 - **Batteries included.** CLI, Telegram, tools, skills, and model execution ship with the core runtime. Use the defaults first, replace them later.
-- **Skills as documents.** Skills are plain `SKILL.md` files with validated frontmatter. They stay readable, auditable, and easy to override.
+- **Operator equivalence.** Humans and agents work inside the same runtime boundaries, with the same evidence trail and handoff model. No hidden operator class.
 
 ## How It Works
 
@@ -57,7 +57,7 @@ resolve_session → load_state → build_prompt → run_model
 
 Builtins are registered first. External plugins load after them. At runtime, later plugins take precedence. There are no framework-only shortcuts.
 
-If `AGENTS.md` exists in the workspace, it is appended to the system prompt automatically.
+Bub builds on [agents.md](https://agents.md/) and [Agent Skills](https://agentskills.io/) and documents a few recommended authoring patterns for using it well.
 
 Key source files:
 
@@ -132,10 +132,9 @@ Read more:
 - [Getting Started](https://bub.build/docs/getting-started/) — install Bub and run the first turn
 - [Architecture](https://bub.build/docs/concepts/architecture/) — the mental model behind the runtime
 - [Channels](https://bub.build/docs/guides/channels/) — run Bub in CLI, Telegram, or your own channel
-- [Skills](https://bub.build/docs/guides/skills/) — discover, inspect, and author `SKILL.md` skills
+- [Skills](https://bub.build/docs/guides/skills/) — discover, inspect, and author Agent Skills in Bub
 - [Extending](https://bub.build/docs/extending/) — write plugins, override hooks, ship tools and skills
 - [Deployment](https://bub.build/docs/guides/deployment/) — Docker, environment, upgrades
-- [Posts](https://bub.build/posts/) — design notes
 
 ## Development
 
