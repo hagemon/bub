@@ -45,7 +45,7 @@ class BubFramework:
         self._hook_runtime = HookRuntime(self._plugin_manager)
         self._plugin_status: dict[str, PluginStatus] = {}
         self._outbound_router: OutboundChannelRouter | None = None
-        self._config_file = config_file
+        configure.load(config_file)
 
     def _load_builtin_hooks(self) -> None:
         from bub.builtin.hook_impl import BuiltinImpl
@@ -84,8 +84,6 @@ class BubFramework:
                 self._plugin_status[plugin_name] = PluginStatus(is_success=False, detail=str(exc))
             else:
                 self._plugin_status[plugin_name] = PluginStatus(is_success=True)
-
-        configure.load(self._config_file)
 
     def create_cli_app(self) -> typer.Typer:
         """Create CLI app by collecting commands from hooks. Can be used for custom CLI entry point."""

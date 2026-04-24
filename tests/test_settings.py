@@ -3,9 +3,7 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-import pytest
-
-from bub.builtin.settings import AgentSettings, load_settings
+from bub.builtin.settings import DEFAULT_MODEL, AgentSettings, load_settings
 
 
 def _settings_with_env(env: dict[str, str]) -> AgentSettings:
@@ -129,9 +127,12 @@ def test_settings_client_args_can_be_disabled() -> None:
     assert settings.client_args is None
 
 
-def test_load_settings_requires_loaded_config() -> None:
-    with pytest.raises(RuntimeError, match="Config not loaded yet"):
-        load_settings()
+def test_load_settings_returns_defaults_without_loaded_config() -> None:
+    with patch.dict(os.environ, {}, clear=True):
+        settings = load_settings()
+
+    assert settings.model == DEFAULT_MODEL
+    assert settings.max_steps == AgentSettings.model_fields["max_steps"].default
 
 
 def test_load_settings_returns_loaded_config(load_config) -> None:

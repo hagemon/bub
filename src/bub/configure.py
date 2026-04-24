@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 CONFIG_MAP: dict[str, list[type[BaseSettings]]] = {}
 ROOT = ""
 
-_global_config: dict[str, list[BaseSettings]] | None = None
+_global_config: dict[str, list[BaseSettings]] = {}
+_config_data: dict[str, Any] = {}
 
 
 class Settings(BaseSettings):
@@ -28,6 +29,7 @@ def config[C: type[BaseSettings]](name: str = ROOT) -> Callable[[C], C]:
     """Decorator to register a config class for a plugin."""
 
     def decorator(cls: C) -> C:
+        cls.__config_name__ = name  # type: ignore[attr-defined]
         if name not in CONFIG_MAP:
             CONFIG_MAP[name] = []
         CONFIG_MAP[name].append(cls)
@@ -36,37 +38,29 @@ def config[C: type[BaseSettings]](name: str = ROOT) -> Callable[[C], C]:
     return decorator
 
 
-def load(config_file: Path) -> dict[str, list[BaseSettings]]:
+def load(config_file: Path) -> dict[str, Any]:
     """Load config from a file."""
     import yaml
 
-    global _global_config
-    if _global_config is not None:
-        return _global_config
-
-    this_data: dict[str, list[BaseSettings]] = {}
-
-    config_data: dict[str, Any] = {}
+    _config_data.clear()
     if config_file.exists():
         with config_file.open() as f:
-            config_data = yaml.safe_load(f) or {}
-
-    for name, config_classes in CONFIG_MAP.items():
-        section_data = config_data if name == ROOT else config_data.get(name, {})
-        for config_cls in config_classes:
-            config_instance = config_cls.model_validate(section_data)
-            this_data.setdefault(name, []).append(config_instance)
-
-    _global_config = this_data
-    return _global_config
+            _config_data.update(yaml.safe_load(f) or {})
+    return _config_data
 
 
 def ensure_config[C: BaseSettings](config_cls: type[C]) -> C:
     """No-op function to ensure a config class is registered and can be imported."""
-    if _global_config is None:
-        raise RuntimeError("Config not loaded yet")
-    for config_list in _global_config.values():
-        for config in config_list:
-            if isinstance(config, config_cls):
-                return config
-    raise ValueError(f"Config class {config_cls} not found in loaded config")
+    section = getattr(config_cls, "__config_name__", ROOT)
+    if section not in CONFIG_MAP:
+        raise ValueError(f"No config registered for section '{section}'")
+
+    instances = _global_config.setdefault(section, [])
+    for instance in instances:
+        if isinstance(instance, config_cls):
+            return instance
+
+    section_data = _config_data.get(section, {}) if section != ROOT else _config_data
+    instance = config_cls.model_validate(section_data)
+    instances.append(instance)
+    return instance

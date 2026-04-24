@@ -11,9 +11,7 @@ from republic.tape import TapeStore
 from bub.builtin.agent import Agent
 from bub.builtin.context import default_tape_context
 from bub.channels.base import Channel
-from bub.channels.cli import CliChannel
 from bub.channels.message import ChannelMessage, MediaItem
-from bub.channels.telegram import TelegramChannel
 from bub.envelope import content_of, field_of
 from bub.framework import BubFramework
 from bub.hookspecs import hookimpl
@@ -150,6 +148,9 @@ class BuiltinImpl:
 
     @hookimpl
     def provide_channels(self, message_handler: MessageHandler) -> list[Channel]:
+        from bub.channels.cli import CliChannel
+        from bub.channels.telegram import TelegramChannel
+
         return [
             TelegramChannel(on_receive=message_handler),
             CliChannel(on_receive=message_handler, agent=self._get_agent()),

@@ -139,8 +139,8 @@ telegram:
 
         framework.load_hooks()
 
-    assert load_settings().model == "openai:gpt-5"
-    assert ensure_config(TelegramSettings).token == expected
+        assert load_settings().model == "openai:gpt-5"
+        assert ensure_config(TelegramSettings).token == expected
 
 
 def test_load_hooks_initializes_callable_plugins_after_config_load(

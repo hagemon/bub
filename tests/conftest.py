@@ -10,9 +10,11 @@ import bub.configure as configure
 
 @pytest.fixture(autouse=True)
 def reset_loaded_config() -> Generator[None, None, None]:
-    configure._global_config = None
+    configure._global_config.clear()
+    configure._config_data.clear()
     yield
-    configure._global_config = None
+    configure._global_config.clear()
+    configure._config_data.clear()
 
 
 @pytest.fixture
@@ -30,6 +32,7 @@ def load_config(write_config: Callable[[str], Path], monkeypatch: pytest.MonkeyP
     def _load(content: str = "") -> Path:
         config_file = write_config(content)
         monkeypatch.chdir(config_file.parent)
+        configure._global_config.clear()
         configure.load(config_file)
         return config_file
 
