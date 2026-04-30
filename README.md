@@ -113,7 +113,7 @@ Lines starting with `,` enter internal command mode (`,help`, `,skill name=my-sk
 | `BUB_API_BASE`              | —                            | Custom provider endpoint                             |
 | `BUB_API_FORMAT`            | `completion`                 | `completion`, `responses`, or `messages`             |
 | `BUB_CLIENT_ARGS`           | —                            | JSON object forwarded to the underlying model client |
-| `BUB_REQUEST_ARGS`          | —                            | JSON object for provider request extensions, sent via `extra_body` when needed (e.g. `{"chat_template_kwargs":{"enable_thinking":false}}`) |
+| `BUB_REQUEST_ARGS`          | —                            | JSON object forwarded as per-request model arguments (e.g. `{"extra_body":{"chat_template_kwargs":{"enable_thinking":false}}}`) |
 | `BUB_MAX_STEPS`             | `50`                         | Max tool-use loop iterations                         |
 | `BUB_MAX_TOKENS`            | `1024`                       | Max tokens per model call                            |
 | `BUB_MODEL_TIMEOUT_SECONDS` | —                            | Model call timeout (seconds)                         |

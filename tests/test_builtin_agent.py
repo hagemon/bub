@@ -200,12 +200,12 @@ async def test_agent_run_model_defaults_to_none() -> None:
 async def test_agent_run_stream_passes_request_args_to_llm() -> None:
     agent = _make_agent()
     agent.settings = AgentSettings.model_construct(
-        model="vllm:qwen3.6-27B",
+        model="test:model",
         api_key="k",
         api_base="b",
         request_args={
             "temperature": 0.1,
-            "chat_template_kwargs": {"enable_thinking": False},
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
         },
     )
     fork_capture = _ForkCapture()
@@ -220,19 +220,18 @@ async def test_agent_run_stream_passes_request_args_to_llm() -> None:
     assert fake_tapes.stream_kwargs["extra_body"] == {
         "chat_template_kwargs": {"enable_thinking": False},
     }
-    assert "chat_template_kwargs" not in fake_tapes.stream_kwargs
 
 
 @pytest.mark.asyncio
 async def test_agent_run_passes_request_args_to_tool_loop() -> None:
     agent = _make_agent()
     agent.settings = AgentSettings.model_construct(
-        model="vllm:qwen3.6-27B",
+        model="test:model",
         api_key="k",
         api_base="b",
         request_args={
             "temperature": 0.1,
-            "chat_template_kwargs": {"enable_thinking": False},
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
         },
     )
     fork_capture = _ForkCapture()
@@ -247,14 +246,13 @@ async def test_agent_run_passes_request_args_to_tool_loop() -> None:
     assert fake_tapes.run_kwargs["extra_body"] == {
         "chat_template_kwargs": {"enable_thinking": False},
     }
-    assert "chat_template_kwargs" not in fake_tapes.run_kwargs
 
 
 @pytest.mark.asyncio
-async def test_agent_run_merges_explicit_extra_body_with_custom_request_args() -> None:
+async def test_agent_run_preserves_request_args_without_rewriting() -> None:
     agent = _make_agent()
     agent.settings = AgentSettings.model_construct(
-        model="vllm:qwen3.6-27B",
+        model="test:model",
         api_key="k",
         api_base="b",
         request_args={
@@ -272,7 +270,5 @@ async def test_agent_run_merges_explicit_extra_body_with_custom_request_args() -
 
     assert fake_tapes.stream_kwargs is not None
     assert fake_tapes.stream_kwargs["temperature"] == 0.1
-    assert fake_tapes.stream_kwargs["extra_body"] == {
-        "chat_template_kwargs": {"enable_thinking": False},
-        "top_k": 5,
-    }
+    assert fake_tapes.stream_kwargs["chat_template_kwargs"] == {"enable_thinking": False}
+    assert fake_tapes.stream_kwargs["extra_body"] == {"top_k": 5}
