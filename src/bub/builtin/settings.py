@@ -12,7 +12,7 @@ from pydantic_settings import SettingsConfigDict
 from bub import Settings, config, ensure_config
 
 DEFAULT_MODEL = "openrouter:openrouter/free"
-DEFAULT_MAX_TOKENS = 1024
+DEFAULT_MAX_TOKENS = 16384
 
 
 def provider_specific(setting_name: str) -> Callable[[], dict[str, str] | None]:
